@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Django File Manager</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #222;
+        }
+
+        header {
+            background: #1f2937;
+            color: white;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .toolbar {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        input[type="file"] {
+            padding: 8px;
+        }
+
+        .file-list {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .file-name {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .file-date {
+            color: #777;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .download {
+            background: #16a34a;
+        }
+
+        .download:hover {
+            background: #15803d;
+        }
+
+        .empty {
+            padding: 30px;
+            text-align: center;
+            color: #777;
+        }
+
+        #message {
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<header>
+    <h1>📁 Django File Manager</h1>
+</header>
+
+<div class="container">
+
+    <div class="toolbar">
+
+        <input
+            type="file"
+            id="fileInput"
+        >
+
+        <button onclick="uploadFile()">
+            ⬆ Upload
+        </button>
+
+        <button onclick="loadFiles()">
+            🔄 Refresh
+        </button>
+
+    </div>
+
+    <div id="message"></div>
+
+    <div class="file-list" id="fileList">
+
+        <div class="empty">
+            Loading files...
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+async function loadFiles() {
+
+    const response =
+        await fetch("/api/files/");
+
+    const files =
+        await response.json();
+
+    const fileList =
+        document.getElementById("fileList");
+
+    fileList.innerHTML = "";
+
+    if (files.length === 0) {
+
+        fileList.innerHTML =
+            '<div class="empty">No files uploaded yet.</div>';
+
+        return;
+    }
+
+    files.forEach(file => {
+
+        const item =
+            document.createElement("div");
+
+        item.className =
+            "file-item";
+
+        item.innerHTML = `
+            <div>
+                <div class="file-name">
+                    📄 ${file.name}
+                </div>
+
+                <div class="file-date">
+                    Uploaded:
+                    ${new Date(file.uploaded_at).toLocaleString()}
+                </div>
+            </div>
+
+            <a href="${file.url}" download>
+                <button class="download">
+                    ⬇ Download
+                </button>
+            </a>
+        `;
+
+        fileList.appendChild(item);
+
+    });
+}
+
+
+async function uploadFile() {
+
+    const input =
+        document.getElementById("fileInput");
+
+    if (!input.files.length) {
+
+        alert("Please select a file.");
+
+        return;
+    }
+
+    const formData =
+        new FormData();
+
+    formData.append(
+        "file",
+        input.files[0]
+    );
+
+    const response =
+        await fetch(
+            "/upload/",
+            {
+                method: "POST",
+                body: formData
+            }
+        );
+
+    const data =
+        await response.json();
+
+    if (response.ok) {
+
+        document.getElementById(
+            "message"
+        ).textContent =
+            "✅ File uploaded successfully!";
+
+        input.value = "";
+
+        loadFiles();
+
+    } else {
+
+        document.getElementById(
+            "message"
+        ).textContent =
+            "❌ " + (data.error || "Upload failed");
+
+    }
+
+}
+
+
+loadFiles();
+
+</script>
+
+</body>
+
+</html>
